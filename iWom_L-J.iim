@@ -1,11 +1,17 @@
 VERSION BUILD=10021450
+' Connect to login page and enter login credentials
 URL GOTO=https://www.bpocenter-dxc.com/iwom_web5/portal_apps.aspx
 TAG POS=1 TYPE=INPUT:TEXT FORM=ID:form1 ATTR=ID:LoginApps_UserName CONTENT=Nombre<SP>Apellido
 SET !ENCRYPTION NO
 TAG POS=1 TYPE=INPUT:PASSWORD FORM=ID:form1 ATTR=ID:LoginApps_Password CONTENT=XXXXXX
 TAG POS=1 TYPE=INPUT:SUBMIT FORM=ID:form1 ATTR=ID:LoginApps_btnlogin
+' Click in gray box to enter in the iWom tool.
+' Wait 2 seconds for credentials to be sent correctly
 TAG POS=1 TYPE=IMG ATTR=ID:MainContent_LVportalapps_ctrl0_imgLogo_App_0
 WAIT SECONDS=2
+' Go to daily information entering page
+' Always put the same information: from 09:00 to 18:00 with 08:32 effective hours
+' Wait 3 second for the operation to succeed and see it correctly done
 URL GOTO=https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx
 TAG POS=1 TYPE=SELECT FORM=ID:aspnetForm ATTR=ID:ctl00_Sustituto_d_hora_inicio1 CONTENT=%9
 TAG POS=1 TYPE=SELECT FORM=ID:aspnetForm ATTR=ID:ctl00_Sustituto_D_minuto_inicio1 CONTENT=%0
@@ -14,6 +20,7 @@ TAG POS=1 TYPE=SELECT FORM=ID:aspnetForm ATTR=ID:ctl00_Sustituto_d_minuto_final1
 TAG POS=1 TYPE=INPUT:TEXT FORM=ID:aspnetForm ATTR=ID:ctl00_Sustituto_T_efectivo CONTENT=08:32
 TAG POS=1 TYPE=INPUT:BUTTON FORM=ID:aspnetForm ATTR=ID:ctl00_Sustituto_Btn_Guardar
 WAIT SECONDS=3
+' Logout and close all opened tabs
 TAG POS=1 TYPE=A ATTR=ID:ctl00_LinkButton1
 TAB T=2
 WAIT SECONDS=1
