@@ -94,7 +94,7 @@ class EnterHours:
         mstart.send_keys(Keys.HOME+'0')
         hend.send_keys(Keys.HOME+'20')
         mend.send_keys(Keys.HOME+'0')
-        horas.send_keys(Keys.BACKSPACE*5 + hours_value)
+        horas.send_keys(Keys.BACKSPACE*5 + self.hours_value)
 
     def save_quit(self):
         self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
