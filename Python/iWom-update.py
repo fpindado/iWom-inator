@@ -9,8 +9,9 @@ from selenium.webdriver import Firefox, Chrome, Ie, Edge
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 from time import asctime, mktime, localtime
+import sys
 
-CREDENTIALS = "users.csv"
+CREDENTIALS = "config/users.csv"
 
 def wait(sec):
     t1 = mktime(localtime())
@@ -55,7 +56,7 @@ class EnterHours:
         self.login()
         self.open_app()
         self.entry_data()
-        self.save_quit()
+        self.quit_session()
     
     def open_session(self, browser):
         if browser == 'firefox':
@@ -75,9 +76,9 @@ class EnterHours:
         self.session.find_element_by_id("LoginApps_UserName").send_keys(self.username)
         self.session.find_element_by_id("LoginApps_Password").send_keys(self.userpwd)
         self.session.find_element_by_id("LoginApps_btnlogin").click()
-    
-    def open_app(self):
         wait(2)
+    
+    def open_app(self):        
         self.session.find_element_by_id("MainContent_LVportalapps_ctrl0_imgLogo_App_0").click()
         wait(2)
 
@@ -92,16 +93,21 @@ class EnterHours:
         # in case some values exist already, they need to be removed
         hstart.send_keys(Keys.HOME+'09')
         mstart.send_keys(Keys.HOME+'0')
-        hend.send_keys(Keys.HOME+'20')
+        hend.send_keys(Keys.HOME+'18')
         mend.send_keys(Keys.HOME+'0')
         horas.send_keys(Keys.BACKSPACE*5 + self.hours_value)
-
-    def save_quit(self):
         self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
+
+    def quit_session(self):
         self.session.quit()
 
 
 ######################## MAIN ##################################
+
+if len(sys.argv) < 2: # no arguments
+    browser = 'firefox'
+else:
+    browser = sys.argv[1]
 
 hours = calculate_hours()
 users = get_credentials()
@@ -109,4 +115,4 @@ users = get_credentials()
 for each in users:
     username = each
     userpwd = users[each]
-    EnterHours('firefox', username, userpwd, hours)
+    EnterHours(browser, username, userpwd, hours)
