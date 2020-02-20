@@ -15,8 +15,9 @@ It allows for multiple user filling, using the login and passwords saved in a .c
 1. Get the latest release from python, under folder `releases\`.
 2. Unzip on a folder in your PC
 3. Update the file `config/users.csv` with your login(s) and password(s).
-4. Run file `iWom-update`.
-5. You can add the file in the windows scheduler, so it runs every day to update the time
+4. Update the file `config/config.ini` with the options as needed
+5. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right.
+6. You can add the launcher in the windows scheduler, so it runs every day to update the time.
 
 
 ## Dependencies / issues
@@ -25,10 +26,10 @@ This script uses [Selenium package](https://selenium.dev/) to automate the entry
 
 https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
 
-At the moment, it only works with Firefox. In later releases we will include launchers for each browser.
-
 In case you have issues with the webdriver that is included in the distribution, because using a different version of web browser, you can download the appropriate driver from here:
 
 https://selenium.dev/documentation/en/webdriver/driver_requirements/#quick-reference
 
-And place it under the same folder as the executable.
+And place it under the same folder as the iWom-update.exe program.
+
+The Internet Explorer version gives an error, according to our tests. Firefox, Chrome and Edge browsers work well.
