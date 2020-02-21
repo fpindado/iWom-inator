@@ -17,8 +17,12 @@ CONFIG = "config/config.ini"
     
 
 def calculate_hours(conf): # calculate hours
-    ''' calculates the number of hours, and start/end time based on the date and config
-    returns a dictionary with: start time (h and min), end time (h and min), and number of hours
+    ''' calculates the number of hours, and start/end time based on the date 
+    and config file. 
+    Returns a dictionary with: 
+        start time (h and min), 
+        end time (h and min), 
+        and number of hours
     '''
     today = localtime()
     
@@ -78,9 +82,7 @@ def get_config():
 
 
 class EnterHours:
-    def __init__(self, browser, username, userpwd):
-        self.username = username
-        self.userpwd = userpwd
+    def __init__(self, browser):
         self.open_session(browser)
     
     def open_session(self, browser):
@@ -96,10 +98,10 @@ class EnterHours:
         elif browser == 'edge':
             self.session = Edge()
     
-    def login(self):
+    def login(self, username, userpwd):
         self.session.get('https://www.bpocenter-dxc.com/iwom_web5/portal_apps.aspx')
-        self.session.find_element_by_id("LoginApps_UserName").send_keys(self.username)
-        self.session.find_element_by_id("LoginApps_Password").send_keys(self.userpwd)
+        self.session.find_element_by_id("LoginApps_UserName").send_keys(username)
+        self.session.find_element_by_id("LoginApps_Password").send_keys(userpwd)
         self.session.find_element_by_id("LoginApps_btnlogin").click()
         sleep(2)
     
@@ -122,6 +124,7 @@ class EnterHours:
         mend.send_keys(Keys.HOME + hours['end_m'])
         horas.send_keys(Keys.BACKSPACE*5 + hours['value'])
         self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
+        sleep(2) # to ensure it has time to save
 
     def quit_session(self):
         self.session.quit()
@@ -141,8 +144,8 @@ users = get_credentials()
 for user in users:
     username = user
     userpwd = users[user]
-    session = EnterHours(browser, username, userpwd)
-    session.login()
+    session = EnterHours(browser)
+    session.login(username, userpwd)
     session.open_app()
     session.entry_data()
     session.quit_session()
