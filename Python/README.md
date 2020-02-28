@@ -15,7 +15,7 @@ It allows for multiple user filling, using the login and passwords saved in a .c
 
 ### Windows:
 
-       1. Get the latest release from python, under folder `releases\`.
+  1. Get the latest release from python, under folder `releases\`.
   2. Unzip on a folder in your PC
   3. Update the file `config/users.csv` with your login(s) and password(s).
   4. Update the file `config/config.ini` with the options as needed
@@ -27,9 +27,9 @@ It allows for multiple user filling, using the login and passwords saved in a .c
 You only need the python script `iWom-update.py`, and the config files as above.
 
   1. **Pre-requisites**: you need to have `python3` installed, and the `selenium` package. You can get the selenium package by executing:
-  2. Download file `/Python/iWom-update.py` from the repository, and put in a local folder.
-  - `pip3 install seleniunm`
-  3. Download `/Python/templates/*`, and put them in a subfolder called `config/`.
+     - `pip3 install seleniunm`
+  2. Get the latest release from python, under folder `releases\`.
+  3. Unzip on a folder in your PC
   4. Update the file `config/users.csv` with your login(s) and password(s).
   5. Update the file `config/config.ini` with the options as needed
   6. To execute you have two options:
