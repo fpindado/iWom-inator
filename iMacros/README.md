@@ -17,4 +17,4 @@ It only fills today information, not multi-day filling.
 ## Execution
 1. Open your Web Browser.
 2. Open your iMacros extension (Cyan gear on the extension bar).
-3. Execute your desired macro depending on the day.
+3. Execute the macro and it will fill the correct hours (08:32 or 06:30) depending on the day.
