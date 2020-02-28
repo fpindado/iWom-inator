@@ -12,12 +12,31 @@ It allows for multiple user filling, using the login and passwords saved in a .c
 
 
 ## Installation and execution
-1. Get the latest release from python, under folder `releases\`.
-2. Unzip on a folder in your PC
-3. Update the file `config/users.csv` with your login(s) and password(s).
-4. Update the file `config/config.ini` with the options as needed
-5. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right.
-6. You can add the launcher in the windows scheduler, so it runs every day to update the time.
+
+### Windows:
+
+       1. Get the latest release from python, under folder `releases\`.
+  2. Unzip on a folder in your PC
+  3. Update the file `config/users.csv` with your login(s) and password(s).
+  4. Update the file `config/config.ini` with the options as needed
+  5. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right.
+  6. You can add the launcher in the windows scheduler, so it runs every day to update the time.
+
+### Linux
+
+You only need the python script `iWom-update.py`, and the config files as above.
+
+  1. **Pre-requisites**: you need to have `python3` installed, and the `selenium` package. You can get the selenium package by executing:
+  2. Download file `/Python/iWom-update.py` from the repository, and put in a local folder.
+  - `pip3 install seleniunm`
+  3. Download `/Python/templates/*`, and put them in a subfolder called `config/`.
+  4. Update the file `config/users.csv` with your login(s) and password(s).
+  5. Update the file `config/config.ini` with the options as needed
+  6. To execute you have two options:
+     - execute the following: `python3 iWom-update.py <<browser>>`, where _browser_ is one of the following: 'firefox' or 'chrome'.
+     - make the script executable, and then launch the script directly:
+       - `chmod +x iWom-update.py`
+       - `iWom-update.py <<browser>>`
 
 
 ## Dependencies / issues

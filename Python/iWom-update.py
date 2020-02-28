@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Feb 17 18:15:06 2020
@@ -6,7 +7,8 @@ Created on Mon Feb 17 18:15:06 2020
 """
 
 from selenium.webdriver import Firefox, Chrome, Ie, Edge
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.options import Options as f_Options
+from selenium.webdriver.chrome.options import Options as c_Options
 from selenium.webdriver.common.keys import Keys
 from time import localtime, sleep, strptime
 import sys
@@ -87,14 +89,16 @@ class EnterHours:
     
     def open_session(self, browser):
         if browser == 'firefox':
-            opts = Options()
+            opts = f_Options()
             opts.headless = True
             assert opts.headless  # Operating in headless mode
             self.session = Firefox(options=opts)
         elif browser == 'ie':
             self.session = Ie()
         elif browser == 'chrome':
-            self.session = Chrome()
+            opts = c_Options()
+            opts.add_argument('--headless')
+            self.session = Chrome(options=opts)
         elif browser == 'edge':
             self.session = Edge()
     
