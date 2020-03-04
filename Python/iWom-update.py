@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 17 18:15:06 2020
+Created on Mon Mar 02 10:10:35 2020
 
-@author: opujo
+@author: opujo & fpindado
 """
 
 from selenium.webdriver import Firefox, Chrome, Ie, Edge
@@ -11,12 +11,14 @@ from selenium.webdriver.firefox.options import Options as f_Options
 from selenium.webdriver.chrome.options import Options as c_Options
 from selenium.webdriver.common.keys import Keys
 from time import localtime, sleep, strptime
+from datetime import datetime
 import sys
 import configparser
 
 CREDENTIALS = "config/users.csv"
 CONFIG = "config/config.ini"
-    
+VACATIONS = "config/vacations.ini"
+LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 
 def calculate_hours(conf): # calculate hours
     ''' calculates the number of hours, and start/end time based on the date 
@@ -62,6 +64,7 @@ def calculate_hours(conf): # calculate hours
 
     return t
 
+
 def get_credentials():
     # get credentials from file
     with open (CREDENTIALS, encoding='utf-8-sig') as f:
@@ -77,11 +80,38 @@ def get_credentials():
     
 
 def get_config():
-    # get credentials from file
+    # get configuration from file
     config = configparser.ConfigParser()
     config.read(CONFIG)
     return config
 
+
+def get_vacations():
+    # get vacations from file
+    vacations = configparser.ConfigParser()
+    vacations.read(VACATIONS)
+    return vacations
+
+
+def user_in_vacation(user,vacations):
+    '''
+    Determines if an specific user is on vacation 
+    Returns true if user is on vacation or False if not in vacation
+    '''
+    today = localtime()
+    
+    # check if date is within vacation range
+    start_1 = strptime(vacations[user].get('Vacation Start 1'), "%Y-%m-%d")
+    start_2 = strptime(vacations[user].get('Vacation Start 2'), "%Y-%m-%d")
+    start_3 = strptime(vacations[user].get('Vacation Start 3'), "%Y-%m-%d")
+    end_1 = strptime(vacations[user].get('Vacation End 1'), "%Y-%m-%d")
+    end_2 = strptime(vacations[user].get('Vacation End 2'), "%Y-%m-%d")
+    end_3 = strptime(vacations[user].get('Vacation End 3'), "%Y-%m-%d")
+
+    if (today > start_1 and today < end_1) or (today > start_2 and today < end_2) or (today > start_3 and today < end_3):
+        return True
+        
+    return False
 
 class EnterHours:
     def __init__(self, browser):
@@ -141,15 +171,30 @@ if len(sys.argv) < 2: # no arguments
 else:
     browser = sys.argv[1]
 
+# get global configuration, specific hours to enter, vacation information and user credentials
+print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading configuration.", sep="")
 conf = get_config()
+print(datetime.now().strftime(LOG_DATE_FORMAT), ": Calculating hours.", sep="")
 hours = calculate_hours(conf)
+print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading vacations.", sep="")
+vacs = get_vacations()
+print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading users/credentials.", sep="")
 users = get_credentials()
 
+# for each user in users file, enter its hours except if it's on vacations
 for user in users:
+    if user_in_vacation(user,vacs) == True:
+        print("{}: The user: {}, is on vacations.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+        continue
+    print("{}: Starting registration of hours for user: {}.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
     username = user
     userpwd = users[user]
+    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Opening browser.", sep="")
     session = EnterHours(browser)
+    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Login into iWom.", sep="")
     session.login(username, userpwd)
     session.open_app()
+    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Entering information in iWom.", sep="")
     session.entry_data()
+    print("{}: Closing sesion for user: {}".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
     session.quit_session()
