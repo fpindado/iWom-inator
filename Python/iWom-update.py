@@ -113,6 +113,12 @@ def user_in_vacation(user,vacations):
         
     return False
 
+
+def log_entry(text):
+    print(datetime.now().strftime(LOG_DATE_FORMAT), ": ", text, sep="")
+
+
+
 class EnterHours:
     def __init__(self, browser):
         self.open_session(browser)
@@ -172,29 +178,26 @@ else:
     browser = sys.argv[1]
 
 # get global configuration, specific hours to enter, vacation information and user credentials
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading configuration.", sep="")
+log_entry ("Loading configuration files.")
 conf = get_config()
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Calculating hours.", sep="")
 hours = calculate_hours(conf)
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading vacations.", sep="")
 vacs = get_vacations()
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading users/credentials.", sep="")
 users = get_credentials()
 
 # for each user in users file, enter its hours except if it's on vacations
 for user in users:
-    if user_in_vacation(user,vacs) == True:
-        print("{}: The user: {}, is on vacations.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    if user_in_vacation(user, vacs) == True:
+        log_entry(f'The user: {user} is on vacation.')
         continue
-    print("{}: Starting registration of hours for user: {}.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    log_entry(f'Starting registration of hours for user: {user}.')
     username = user
     userpwd = users[user]
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Opening browser.", sep="")
+    log_entry('Opening browser.')
     session = EnterHours(browser)
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Login into iWom.", sep="")
+    log_entry('Login into iWom.')
     session.login(username, userpwd)
     session.open_app()
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Entering information in iWom.", sep="")
+    log_entry('Entering information in iWom.')
     session.entry_data()
-    print("{}: Closing session for user: {}".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    log_entry(f'Closing session for user: {user}')
     session.quit_session()
