@@ -196,5 +196,5 @@ for user in users:
     session.open_app()
     print(datetime.now().strftime(LOG_DATE_FORMAT), ": Entering information in iWom.", sep="")
     session.entry_data()
-    print("{}: Closing sesion for user: {}".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    print("{}: Closing session for user: {}".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
     session.quit_session()
