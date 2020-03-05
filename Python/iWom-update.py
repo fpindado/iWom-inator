@@ -10,6 +10,7 @@ from selenium.webdriver import Firefox, Chrome, Ie, Edge
 from selenium.webdriver.firefox.options import Options as f_Options
 from selenium.webdriver.chrome.options import Options as c_Options
 from selenium.webdriver.common.keys import Keys
+from time import sleep
 import datetime as dt
 import sys
 import configparser
@@ -197,6 +198,7 @@ else:
     browser = sys.argv[1]
 
 log_msg = list()
+today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
 log_entry ("Loading configuration files.")
@@ -204,7 +206,6 @@ conf = get_config(CONFIG)
 hours = calculate_hours(conf)
 vac = get_config(VACATION)
 users = get_credentials()
-today = dt.date.today()
 
 
 # for each user in users file, enter its hours except if it's on vacations
