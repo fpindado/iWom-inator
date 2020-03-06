@@ -87,14 +87,18 @@ def get_config(file):
     return config
 
 
-def user_vacation(user, conf):
+def user_vacation(login, conf):
     ''' returns a set with all vacation days from the user '''
     vacation = set()
     delta = dt.timedelta(days=1)
+    if login in conf:
+        user = login
+    else:
+        user = 'DEFAULT'
     for key in conf[user]:
-        var = conf[user][key]
-        if ' to ' in var:
-            start, end = var.split(' to ')
+        period = conf[user][key]
+        if ' to ' in period:
+            start, end = period.split(' to ')
             start = dt.date.fromisoformat(start)
             end = dt.date.fromisoformat(end)
             day = start
@@ -102,7 +106,7 @@ def user_vacation(user, conf):
                 vacation.add(day)
                 day += delta
         else:
-            vacation.add(dt.date.fromisoformat(var))
+            vacation.add(dt.date.fromisoformat(period))
     return vacation
 
     
