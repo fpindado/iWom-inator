@@ -2,8 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 02 10:10:35 2020
+iWom daily filling automation. It only fills today information, not
+multi-day filling.
 
-@author: opujo & fpindado
+It allows for multiple user filling, using the login and passwords
+saved in a .csv file, and detects whether the day is Friday or not, so
+it uses the right amount of hours. It is also able to take into
+account vacation and bank holidays, and mark them as vacation.
+
+@author: opujol & fpindado
 """
 
 from selenium.webdriver import Firefox, Chrome, Ie, Edge
@@ -23,13 +30,14 @@ LOG_FILE = "config/sessions.log"
 
 
 def calculate_hours(conf): # calculate hours
-    ''' calculates the number of hours, and start/end time based on the date 
-    and config file. 
+    """Calculates the number of hours, and start/end time based on the
+    date and config file. 
+    
     Returns a dictionary with: 
         start time (h and min), 
         end time (h and min), 
         and number of hours
-    '''
+    """
     
     # check if date is within range
     start = conf['Jornada normal'].get('start date')
@@ -67,7 +75,8 @@ def calculate_hours(conf): # calculate hours
 
 
 def get_credentials():
-    ''' get credentials from file '''
+    """get credentials from file"""
+    
     with open (CREDENTIALS, encoding='utf-8-sig') as f:
         credentials = f.readlines()
     
@@ -81,14 +90,16 @@ def get_credentials():
     
 
 def get_config(file):
-    ''' returns the configuration from file '''
+    """returns the configuration from file"""
+    
     config = configparser.ConfigParser()
     config.read(file)
     return config
 
 
 def user_vacation(login, conf):
-    ''' returns a set with all vacation days from the user '''
+    """returns a set with all vacation days from the user"""
+    
     vacation = set()
     delta = dt.timedelta(days=1)
     if login in conf:
@@ -112,7 +123,8 @@ def user_vacation(login, conf):
     
 
 def log_entry(text):
-    ''' prints text in a log, including a timestamp and formatting '''
+    """prints text in a log, including a timestamp and formatting"""
+    
     msg = dt.datetime.now().strftime(LOG_DATE_FORMAT) + ": " + text
     print(msg)
     log_msg.append(msg+"\n")
@@ -120,14 +132,15 @@ def log_entry(text):
 
 
 class EnterHours:
-    ''' Object to create a session and interact 
+    """Object to create a session and interact 
     with browser to enter the hours
-    '''
+    """
+    
     def __init__(self, browser):
         self.open_session(browser)
     
     def open_session(self, browser):
-        ''' opens a session using the browser specified '''
+        """opens a session using the browser specified"""
         if browser == 'firefox':
             opts = f_Options()
             opts.headless = True
@@ -143,7 +156,8 @@ class EnterHours:
             self.session = Edge()
     
     def login(self, username, userpwd):
-        ''' login to iWom app, using the login and password '''
+        """login to iWom app, using the login and password"""
+        
         self.session.get('https://www.bpocenter-dxc.com/iwom_web5/portal_apps.aspx')
         self.session.find_element_by_id("LoginApps_UserName").send_keys(username)
         self.session.find_element_by_id("LoginApps_Password").send_keys(userpwd)
@@ -151,12 +165,14 @@ class EnterHours:
         sleep(2)
     
     def open_app(self):   
-        ''' clicks the button to open the app '''
+        """clicks the button to open the app"""
+        
         self.session.find_element_by_id("MainContent_LVportalapps_ctrl0_imgLogo_App_0").click()
         sleep(2)
 
     def entry_hours(self):
-        ''' enter the hours into the app '''
+        """enter the hours into the app"""
+        
         self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
         btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
         if not btn_disponible.is_selected():
@@ -178,7 +194,8 @@ class EnterHours:
         sleep(2) # to ensure it has time to save
 
     def entry_absent(self):
-        ''' mark the current day as vacation '''
+        """mark the current day as vacation"""
+        
         self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
         btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
         if btn_disponible.is_selected():
@@ -191,6 +208,7 @@ class EnterHours:
             log_entry(f'Already configured as vacation. Skiping action.')
 
     def quit_session(self):
+        """close the session and quit the browser"""
         self.session.quit()
 
 
