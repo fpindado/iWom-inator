@@ -1,7 +1,7 @@
 # iWom-inator
 iWom daily filling automation. It only fills today information, not multi-day filling.
 
-It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours.
+It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours. It is also able to take into account vacation and bank holidays, and mark them as vacation.
 
 
 ## Documentation about *Selenium*
@@ -17,10 +17,12 @@ It allows for multiple user filling, using the login and passwords saved in a .c
 
   1. Get the latest release from python, under folder `releases\`.
   2. Unzip on a folder in your PC
-  3. Update the file `config/users.csv` with your login(s) and password(s).
-  4. Update the file `config/config.ini` with the options as needed
-  5. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right.
-  6. You can add the launcher in the windows scheduler, so it runs every day to update the time.
+  3. Update the configuration files under `config/` folder:
+      - file `config/users.csv` with your login(s) and password(s).
+      - file `config/config.ini` with the options as needed
+      - file `config/vacation.ini` with the vacation and bank holiday dates
+  4. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right.
+  5. You can add the launcher in the windows scheduler, so it runs every day to update the time.
 
 ### Linux
 
@@ -30,9 +32,11 @@ You only need the python script `iWom-update.py`, and the config files as above.
      - `pip3 install seleniunm`
   2. Get the latest release from python, under folder `releases\`.
   3. Unzip on a folder in your PC
-  4. Update the file `config/users.csv` with your login(s) and password(s).
-  5. Update the file `config/config.ini` with the options as needed
-  6. To execute you have two options:
+  4. Update the configuration files under `config/` folder:
+      - file `config/users.csv` with your login(s) and password(s).
+      - file `config/config.ini` with the options as needed
+      - file `config/vacation.ini` with the vacation and bank holiday dates
+  5. To execute you have two options:
      - execute the following: `python3 iWom-update.py <<browser>>`, where _browser_ is one of the following: 'firefox' or 'chrome'.
      - make the script executable, and then launch the script directly:
        - `chmod +x iWom-update.py`

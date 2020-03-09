@@ -2,52 +2,61 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 02 10:10:35 2020
+iWom daily filling automation. It only fills today information, not
+multi-day filling.
 
-@author: opujo & fpindado
+It allows for multiple user filling, using the login and passwords
+saved in a .csv file, and detects whether the day is Friday or not, so
+it uses the right amount of hours. It is also able to take into
+account vacation and bank holidays, and mark them as vacation.
+
+@author: opujol & fpindado
 """
 
 from selenium.webdriver import Firefox, Chrome, Ie, Edge
 from selenium.webdriver.firefox.options import Options as f_Options
 from selenium.webdriver.chrome.options import Options as c_Options
 from selenium.webdriver.common.keys import Keys
-from time import localtime, sleep, strptime
-from datetime import datetime
+from time import sleep
+import datetime as dt
 import sys
 import configparser
 
 CREDENTIALS = "config/users.csv"
 CONFIG = "config/config.ini"
-VACATIONS = "config/vacations.ini"
+VACATION = "config/vacation.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
+LOG_FILE = "config/sessions.log"
+
 
 def calculate_hours(conf): # calculate hours
-    ''' calculates the number of hours, and start/end time based on the date 
-    and config file. 
+    """Calculates the number of hours, and start/end time based on the
+    date and config file. 
+    
     Returns a dictionary with: 
         start time (h and min), 
         end time (h and min), 
         and number of hours
-    '''
-    today = localtime()
+    """
     
     # check if date is within range
     start = conf['Jornada normal'].get('start date')
-    start = strptime(start, "%Y-%m-%d")
+    start = dt.date.fromisoformat(start)
     end = conf['Jornada normal'].get('end date')
-    end = strptime(end, "%Y-%m-%d")    
+    end = dt.date.fromisoformat(end)    
     if today < start or today > end:
         print('Date is out of range. Please update your config file and run again.')
         input('Press enter to finish')
         exit(0)
     
     start = conf['Jornada reducida'].get('start date')
-    start = strptime(start, "%Y-%m-%d")
+    start = dt.date.fromisoformat(start)
     end = conf['Jornada reducida'].get('end date')
-    end = strptime(end, "%Y-%m-%d")
+    end = dt.date.fromisoformat(end)    
    
-    if (today > start and today < end) or today.tm_wday == 4:
+    if (today > start and today < end) or today.isoweekday() == 5:
         section = 'Jornada reducida'
-    elif today.tm_wday < 4:
+    elif today.isoweekday() < 5:
         section = 'Jornada normal'
     else:
         section = 'Weekends'
@@ -66,7 +75,8 @@ def calculate_hours(conf): # calculate hours
 
 
 def get_credentials():
-    # get credentials from file
+    """get credentials from file"""
+    
     with open (CREDENTIALS, encoding='utf-8-sig') as f:
         credentials = f.readlines()
     
@@ -79,45 +89,58 @@ def get_credentials():
     return users
     
 
-def get_config():
-    # get configuration from file
+def get_config(file):
+    """returns the configuration from file"""
+    
     config = configparser.ConfigParser()
-    config.read(CONFIG)
+    config.read(file)
     return config
 
 
-def get_vacations():
-    # get vacations from file
-    vacations = configparser.ConfigParser()
-    vacations.read(VACATIONS)
-    return vacations
-
-
-def user_in_vacation(user,vacations):
-    '''
-    Determines if an specific user is on vacation 
-    Returns true if user is on vacation or False if not in vacation
-    '''
-    today = localtime()
+def user_vacation(login, conf):
+    """returns a set with all vacation days from the user"""
     
-    # check if date is within vacation range
-    start_1 = strptime(vacations[user].get('Vacation Start 1'), "%Y-%m-%d")
-    start_2 = strptime(vacations[user].get('Vacation Start 2'), "%Y-%m-%d")
-    start_3 = strptime(vacations[user].get('Vacation Start 3'), "%Y-%m-%d")
-    end_1 = strptime(vacations[user].get('Vacation End 1'), "%Y-%m-%d")
-    end_2 = strptime(vacations[user].get('Vacation End 2'), "%Y-%m-%d")
-    end_3 = strptime(vacations[user].get('Vacation End 3'), "%Y-%m-%d")
+    vacation = set()
+    delta = dt.timedelta(days=1)
+    if login in conf:
+        user = login
+    else:
+        user = 'DEFAULT'
+    for key in conf[user]:
+        period = conf[user][key]
+        if ' to ' in period:
+            start, end = period.split(' to ')
+            start = dt.date.fromisoformat(start)
+            end = dt.date.fromisoformat(end)
+            day = start
+            while day <= end:
+                vacation.add(day)
+                day += delta
+        else:
+            vacation.add(dt.date.fromisoformat(period))
+    return vacation
 
-    if (today > start_1 and today < end_1) or (today > start_2 and today < end_2) or (today > start_3 and today < end_3):
-        return True
-        
-    return False
+    
+
+def log_entry(text):
+    """prints text in a log, including a timestamp and formatting"""
+    
+    msg = dt.datetime.now().strftime(LOG_DATE_FORMAT) + ": " + text
+    print(msg)
+    log_msg.append(msg+"\n")
+
+
 
 class EnterHours:
+    """Object to create a session and interact 
+    with browser to enter the hours
+    """
+    
     def __init__(self, browser):
         self.open_session(browser)
     
     def open_session(self, browser):
+        """opens a session using the browser specified"""
         if browser == 'firefox':
             opts = f_Options()
             opts.headless = True
@@ -133,18 +156,28 @@ class EnterHours:
             self.session = Edge()
     
     def login(self, username, userpwd):
+        """login to iWom app, using the login and password"""
+        
         self.session.get('https://www.bpocenter-dxc.com/iwom_web5/portal_apps.aspx')
         self.session.find_element_by_id("LoginApps_UserName").send_keys(username)
         self.session.find_element_by_id("LoginApps_Password").send_keys(userpwd)
         self.session.find_element_by_id("LoginApps_btnlogin").click()
         sleep(2)
     
-    def open_app(self):        
+    def open_app(self):   
+        """clicks the button to open the app"""
+        
         self.session.find_element_by_id("MainContent_LVportalapps_ctrl0_imgLogo_App_0").click()
         sleep(2)
 
-    def entry_data(self):
+    def entry_hours(self):
+        """enter the hours into the app"""
+        
         self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
+        btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
+        if not btn_disponible.is_selected():
+            btn_disponible.click()
+            sleep(2)
         hstart = self.session.find_element_by_id("ctl00_Sustituto_d_hora_inicio1")
         mstart = self.session.find_element_by_id("ctl00_Sustituto_D_minuto_inicio1")
         hend = self.session.find_element_by_id("ctl00_Sustituto_d_hora_final1")
@@ -160,7 +193,22 @@ class EnterHours:
         self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
         sleep(2) # to ensure it has time to save
 
+    def entry_absent(self):
+        """mark the current day as vacation"""
+        
+        self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
+        btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
+        if btn_disponible.is_selected():
+            btn_disponible.click()
+            sleep(2)
+            self.session.find_element_by_id("ctl00_Sustituto_D_absentismo").send_keys("01")
+            self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar2").click()
+            sleep(2) # to ensure it has time to save
+        else:
+            log_entry(f'Already configured as vacation. Skiping action.')
+
     def quit_session(self):
+        """close the session and quit the browser"""
         self.session.quit()
 
 
@@ -171,30 +219,37 @@ if len(sys.argv) < 2: # no arguments
 else:
     browser = sys.argv[1]
 
+log_msg = list()
+today = dt.date.today()
+
 # get global configuration, specific hours to enter, vacation information and user credentials
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading configuration.", sep="")
-conf = get_config()
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Calculating hours.", sep="")
+log_entry ("Loading configuration files.")
+conf = get_config(CONFIG)
 hours = calculate_hours(conf)
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading vacations.", sep="")
-vacs = get_vacations()
-print(datetime.now().strftime(LOG_DATE_FORMAT), ": Loading users/credentials.", sep="")
+vac = get_config(VACATION)
 users = get_credentials()
+
 
 # for each user in users file, enter its hours except if it's on vacations
 for user in users:
-    if user_in_vacation(user,vacs) == True:
-        print("{}: The user: {}, is on vacations.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
-        continue
-    print("{}: Starting registration of hours for user: {}.".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    log_entry(f'Starting registration of hours for user {user}.')
     username = user
     userpwd = users[user]
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Opening browser.", sep="")
+    log_entry('Opening browser.')
     session = EnterHours(browser)
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Login into iWom.", sep="")
+    log_entry('Login into iWom.')
     session.login(username, userpwd)
     session.open_app()
-    print(datetime.now().strftime(LOG_DATE_FORMAT), ": Entering information in iWom.", sep="")
-    session.entry_data()
-    print("{}: Closing session for user: {}".format(datetime.now().strftime(LOG_DATE_FORMAT),user))
+    if today in user_vacation(user, vac):
+        log_entry(f'Entering information in iWom: on vacation today.')
+        session.entry_absent()
+    else:
+        log_entry(f'Entering information in iWom: {hours["value"]} hours.')
+        session.entry_hours()
+    log_entry(f'Closing session for user {user}')
     session.quit_session()
+
+# write log messages to file
+with open(LOG_FILE, mode='at', encoding='utf-8') as log:
+    log.writelines(log_msg)
+
