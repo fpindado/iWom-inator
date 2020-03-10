@@ -216,7 +216,8 @@ class EnterHours:
     def entry_hours(self):
         """enter the hours into the app"""
         
-        self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
+        self.session.get('https://www.bpocenter-dxc.com/iwom_web4/es-corp/app/Jornada/Reg_jornada.aspx')
+        sleep(2)
         btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
         if not btn_disponible.is_selected():
             btn_disponible.click()
@@ -239,7 +240,7 @@ class EnterHours:
     def entry_absent(self, abs_type):
         """mark the current day as vacation"""
         
-        self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
+        self.session.get('https://www.bpocenter-dxc.com/iwom_web4/es-corp/app/Jornada/Reg_jornada.aspx')
         btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
         if btn_disponible.is_selected():
             btn_disponible.click()
