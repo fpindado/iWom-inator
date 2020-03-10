@@ -23,10 +23,20 @@ import sys
 import configparser
 
 CREDENTIALS = "config/users.csv"
-CONFIG = "config/config.ini"
-VACATION = "config/vacation.ini"
+CONFIG_FILE = "config/config.ini"
+ABSCENCE_FILE = "config/abscences.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 LOG_FILE = "config/sessions.log"
+ABSCENCE = {'festivo': '00',        # same code as weekend by default
+            'vacaciones': '01',
+            'baja medica': '02',
+            'maternidad': '03', 
+            'permiso retribuido': '04', 
+            'excedencia': '05', 
+            'permiso no retribuido': '06', 
+            'descanso turnos': '07', 
+            'compensacion': '08',
+            }
 
 
 def calculate_hours(conf): # calculate hours
@@ -45,7 +55,8 @@ def calculate_hours(conf): # calculate hours
     end = conf['Jornada normal'].get('end date')
     end = dt.date.fromisoformat(end)    
     if today < start or today > end:
-        print('Date is out of range. Please update your config file and run again.')
+        log_entry ("Date is out of range. Please update your config file and \
+                   run again. ", with_user=False)
         input('Press enter to finish')
         exit(0)
     
@@ -97,15 +108,22 @@ def get_config(file):
     return config
 
 
-def user_vacation(login, conf):
-    """returns a set with all vacation days from the user"""
+def user_abscence(login, conf):
+    """returns the type of abscence, based on the configuration of
+    login
+    """
+    if today.isoweekday() > 5: # weekend
+        return '00'
     
-    vacation = set()
+    abs_days = dict()
+    for typ in ABSCENCE:
+        abs_days[typ] = set()
     delta = dt.timedelta(days=1)
     if login in conf:
         user = login
     else:
         user = 'DEFAULT'
+    
     for key in conf[user]:
         period = conf[user][key]
         if ' to ' in period:
@@ -114,18 +132,43 @@ def user_vacation(login, conf):
             end = dt.date.fromisoformat(end)
             day = start
             while day <= end:
-                vacation.add(day)
+                [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ] 
                 day += delta
         else:
-            vacation.add(dt.date.fromisoformat(period))
-    return vacation
-
+            day = dt.date.fromisoformat(period)
+            [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ]
     
+    ret = [ ABSCENCE[n] for n in ABSCENCE if today in abs_days[n] ]
+    
+    return set_priority(ret)
 
-def log_entry(text):
+
+def set_priority(var):
+    """from the list var, it determines the right variable to return
+    taking into account the priorities of the different abscences in
+    case of overlapping
+    """
+    
+    if len(var) == 0: # if list empty, return empty string
+        ret = ''
+    elif len(var) == 1: # if only one value, return the value
+        ret = var[0]
+    else:               # need to set the right priority
+        if '00' in var:
+            ret = '00'
+        else:
+            ret = sorted(var, reverse=True)[0]
+    
+    return ret
+        
+
+def log_entry(text, with_user=True):
     """prints text in a log, including a timestamp and formatting"""
     
-    msg = dt.datetime.now().strftime(LOG_DATE_FORMAT) + ": " + text
+    if with_user:
+        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: [{user}] {text}"
+    else:
+        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: {text}"
     print(msg)
     log_msg.append(msg+"\n")
 
@@ -193,7 +236,7 @@ class EnterHours:
         self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
         sleep(2) # to ensure it has time to save
 
-    def entry_absent(self):
+    def entry_absent(self, abs_type):
         """mark the current day as vacation"""
         
         self.session.get('https://www.bpocenter-dxc.com/hp_web2/es-corp/app/Jornada/Reg_jornada.aspx')
@@ -201,11 +244,11 @@ class EnterHours:
         if btn_disponible.is_selected():
             btn_disponible.click()
             sleep(2)
-            self.session.find_element_by_id("ctl00_Sustituto_D_absentismo").send_keys("01")
-            self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar2").click()
-            sleep(2) # to ensure it has time to save
-        else:
-            log_entry(f'Already configured as vacation. Skiping action.')
+        
+        self.session.find_element_by_id("ctl00_Sustituto_D_absentismo").send_keys(Keys.HOME + abs_type)
+        sleep(2) # wait to give time to update the page
+        self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar2").click()
+        sleep(2) # to ensure it has time to save
 
     def quit_session(self):
         """close the session and quit the browser"""
@@ -223,30 +266,33 @@ log_msg = list()
 today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
-log_entry ("Loading configuration files.")
-conf = get_config(CONFIG)
+log_entry ("Loading configuration files.", with_user=False)
+conf = get_config(CONFIG_FILE)
 hours = calculate_hours(conf)
-vac = get_config(VACATION)
+abscence_conf = get_config(ABSCENCE_FILE)
 users = get_credentials()
 
 
-# for each user in users file, enter its hours except if it's on vacations
+# for each user in users file, enter its hours except or abscence code
 for user in users:
-    log_entry(f'Starting registration of hours for user {user}.')
     username = user
     userpwd = users[user]
+    abs_code = user_abscence(user, abscence_conf)
+    if abs_code == '00':
+        log_entry('Non-working day, no need to enter hours.')
+        continue
     log_entry('Opening browser.')
     session = EnterHours(browser)
     log_entry('Login into iWom.')
     session.login(username, userpwd)
     session.open_app()
-    if today in user_vacation(user, vac):
-        log_entry(f'Entering information in iWom: on vacation today.')
-        session.entry_absent()
+    if abs_code:
+        log_entry(f'Entering information in iWom: abscence {abs_code}.')
+        session.entry_absent(abs_code)
     else:
         log_entry(f'Entering information in iWom: {hours["value"]} hours.')
         session.entry_hours()
-    log_entry(f'Closing session for user {user}')
+    log_entry(f'Closing session.')
     session.quit_session()
 
 # write log messages to file
