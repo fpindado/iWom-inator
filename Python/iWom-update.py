@@ -24,10 +24,10 @@ import configparser
 
 CREDENTIALS = "config/users.csv"
 CONFIG_FILE = "config/config.ini"
-ABSCENCE_FILE = "config/abscences.ini"
+ABSENCE_FILE = "config/absences.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 LOG_FILE = "config/sessions.log"
-ABSCENCE = {'festivo': '00',        # same code as weekend by default
+ABSENCE = {'festivo': '00',        # same code as weekend by default
             'vacaciones': '01',
             'baja medica': '02',
             'maternidad': '03', 
@@ -108,15 +108,15 @@ def get_config(file):
     return config
 
 
-def user_abscence(login, conf):
-    """returns the type of abscence, based on the configuration of
+def user_absence(login, conf):
+    """returns the type of absence, based on the configuration of
     login
     """
     if today.isoweekday() > 5: # weekend
         return '00'
     
     abs_days = dict()
-    for typ in ABSCENCE:
+    for typ in ABSENCE:
         abs_days[typ] = set()
     delta = dt.timedelta(days=1)
     if login in conf:
@@ -132,20 +132,20 @@ def user_abscence(login, conf):
             end = dt.date.fromisoformat(end)
             day = start
             while day <= end:
-                [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ] 
+                [ abs_days[n].add(day) for n in ABSENCE if key.lower().startswith(n) ] 
                 day += delta
         else:
             day = dt.date.fromisoformat(period)
-            [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ]
+            [ abs_days[n].add(day) for n in ABSENCE if key.lower().startswith(n) ]
     
-    ret = [ ABSCENCE[n] for n in ABSCENCE if today in abs_days[n] ]
+    ret = [ ABSENCE[n] for n in ABSENCE if today in abs_days[n] ]
     
     return set_priority(ret)
 
 
 def set_priority(var):
     """from the list var, it determines the right variable to return
-    taking into account the priorities of the different abscences in
+    taking into account the priorities of the different absences in
     case of overlapping
     """
     
@@ -270,15 +270,15 @@ today = dt.date.today()
 log_entry ("Loading configuration files.", with_user=False)
 conf = get_config(CONFIG_FILE)
 hours = calculate_hours(conf)
-abscence_conf = get_config(ABSCENCE_FILE)
+absence_conf = get_config(ABSENCE_FILE)
 users = get_credentials()
 
 
-# for each user in users file, enter its hours except or abscence code
+# for each user in users file, enter its hours except or absence code
 for user in users:
     username = user
     userpwd = users[user]
-    abs_code = user_abscence(user, abscence_conf)
+    abs_code = user_absence(user, absence_conf)
     if abs_code == '00':
         log_entry('Non-working day, no need to enter hours.')
         continue
@@ -288,7 +288,7 @@ for user in users:
     session.login(username, userpwd)
     session.open_app()
     if abs_code:
-        log_entry(f'Entering information in iWom: abscence {abs_code}.')
+        log_entry(f'Entering information in iWom: absence {abs_code}.')
         session.entry_absent(abs_code)
     else:
         log_entry(f'Entering information in iWom: {hours["value"]} hours.')

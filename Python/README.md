@@ -1,7 +1,7 @@
 # iWom-inator
 iWom daily filling automation. It only fills today information, not multi-day filling.
 
-It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours. It is also able to take into account different type of abscences and report them into iWom.
+It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours. It is also able to take into account different type of absences and report them into iWom.
 
 
 ## Documentation about *Selenium*
@@ -20,7 +20,7 @@ It allows for multiple user filling, using the login and passwords saved in a .c
   3. Update the configuration files under `config/` folder:
       - file `config/users.csv` with your login(s) and password(s).
       - file `config/config.ini` with the options as needed.
-      - file `config/abscences.ini` with the abscences types and dates. Follow instructions on the file to configure.
+      - file `config/absences.ini` with the absences types and dates. Follow instructions on the file to configure.
   4. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right. Recommended options are firefox or chrome, as they will launch silently.
   5. You can add the launcher in the windows scheduler, so it runs every day to update the time.
 
