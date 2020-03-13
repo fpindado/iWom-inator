@@ -1,7 +1,7 @@
 # iWom-inator
 iWom daily filling automation. It only fills today information, not multi-day filling.
 
-It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours. It is also able to take into account different type of abscences and report them into iWom.
+It allows for multiple user filling, using the login and passwords saved in a .csv file, and detects whether the day is Friday or not, so it uses the right amount of hours. It is also able to take into account different type of absences and report them into iWom.
 
 
 ## Documentation about *Selenium*
@@ -19,8 +19,9 @@ It allows for multiple user filling, using the login and passwords saved in a .c
   2. Unzip on a folder in your PC
   3. Update the configuration files under `config/` folder:
       - file `config/users.csv` with your login(s) and password(s).
-      - file `config/config.ini` with the options as needed.
-      - file `config/abscences.ini` with the abscences types and dates. Follow instructions on the file to configure.
+      - file `config/time` contains the hours to be logged.
+      - file `config/absences.ini` with the absences dates. Follow instructions on the file to configure.
+      - file `config/config.ini` app options, allows to change URLs of the app, or codes to be used for absences. In general, you don't need to change this file.
   4. The script is launched by one of the .bat files under `bin/` folder. Depending on the browser you use, pick the one that is right. Recommended options are firefox or chrome, as they will launch silently.
   5. You can add the launcher in the windows scheduler, so it runs every day to update the time.
 
@@ -34,8 +35,9 @@ You only need the python script `iWom-update.py`, and the config files as above.
   3. Unzip on a folder in your PC
   4. Update the configuration files under `config/` folder:
       - file `config/users.csv` with your login(s) and password(s).
-      - file `config/config.ini` with the options as needed
-      - file `config/vacation.ini` with the vacation and bank holiday dates
+      - file `config/time` contains the hours to be logged.
+      - file `config/absences.ini` with the absences dates. Follow instructions on the file to configure.
+      - file `config/config.ini` app options, allows to change URLs of the app, or codes to be used for absences. In general, you don't need to change this file.
   5. To execute you have two options:
      - execute the following: `python3 iWom-update.py <<browser>>`, where _browser_ is one of the following: 'firefox' or 'chrome'.
      - make the script executable, and then launch the script directly:

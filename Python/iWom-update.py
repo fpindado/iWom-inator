@@ -22,22 +22,39 @@ import datetime as dt
 import sys
 import configparser
 
-CREDENTIALS = "config/users.csv"
 CONFIG_FILE = "config/config.ini"
-ABSCENCE_FILE = "config/abscences.ini"
-LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
-LOG_FILE = "config/sessions.log"
-ABSCENCE = {'festivo': '00',        # same code as weekend by default
-            'vacaciones': '01',
-            'baja medica': '02',
-            'maternidad': '03', 
-            'permiso retribuido': '04', 
-            'excedencia': '05', 
-            'permiso no retribuido': '06', 
-            'descanso turnos': '07', 
-            'compensacion': '08',
-            }
+LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S" # too many special characters for .ini file
 
+
+
+def load_config():
+    """Loads all configuration parameters, and assigns them to global
+    variables, to be used along the program
+    """
+    
+    global TIME_FILE, CREDENTIALS_FILE, ABSENCE_FILE, LOG_FILE, ABSENCE, WEB
+    
+    conf = get_config(CONFIG_FILE)
+    TIME_FILE = conf['Files']['Time']
+    CREDENTIALS_FILE = conf['Files']['Credentials']
+    ABSENCE_FILE = conf['Files']['Absences']
+    LOG_FILE = conf['Files']['Log']
+    
+    ABSENCE = dict(conf['Absences'])
+    
+    WEB=dict()
+    WEB['URLbase'] = conf['Web elements']['URL base']
+    WEB['URLjornada'] = conf['Web elements']['URL jornada']
+    WEB['Disponible'] = conf['Web elements']['Disponible']
+    WEB['Hinicio'] = conf['Web elements']['Hora inicio']
+    WEB['Minicio'] = conf['Web elements']['Minuto inicio']
+    WEB['Hfinal'] = conf['Web elements']['Hora final']
+    WEB['Mfinal'] = conf['Web elements']['Minuto final']
+    WEB['Horas'] = conf['Web elements']['Horas']
+    WEB['Submit'] = conf['Web elements']['Submit hours']
+    WEB['Absence'] = conf['Web elements']['Absence type']
+    WEB['Submit2'] = conf['Web elements']['Submit absences']
+    
 
 def calculate_hours(conf): # calculate hours
     """Calculates the number of hours, and start/end time based on the
@@ -88,7 +105,7 @@ def calculate_hours(conf): # calculate hours
 def get_credentials():
     """get credentials from file"""
     
-    with open (CREDENTIALS, encoding='utf-8-sig') as f:
+    with open (CREDENTIALS_FILE, encoding='utf-8-sig') as f:
         credentials = f.readlines()
     
     users = dict()
@@ -108,15 +125,15 @@ def get_config(file):
     return config
 
 
-def user_abscence(login, conf):
-    """returns the type of abscence, based on the configuration of
+def user_absence(login, conf):
+    """returns the type of absence, based on the configuration of
     login
     """
     if today.isoweekday() > 5: # weekend
         return '00'
     
     abs_days = dict()
-    for typ in ABSCENCE:
+    for typ in ABSENCE:
         abs_days[typ] = set()
     delta = dt.timedelta(days=1)
     if login in conf:
@@ -132,20 +149,20 @@ def user_abscence(login, conf):
             end = dt.date.fromisoformat(end)
             day = start
             while day <= end:
-                [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ] 
+                [ abs_days[n].add(day) for n in ABSENCE if key.lower().startswith(n) ] 
                 day += delta
         else:
             day = dt.date.fromisoformat(period)
-            [ abs_days[n].add(day) for n in ABSCENCE if key.lower().startswith(n) ]
+            [ abs_days[n].add(day) for n in ABSENCE if key.lower().startswith(n) ]
     
-    ret = [ ABSCENCE[n] for n in ABSCENCE if today in abs_days[n] ]
+    ret = [ ABSENCE[n] for n in ABSENCE if today in abs_days[n] ]
     
     return set_priority(ret)
 
 
 def set_priority(var):
     """from the list var, it determines the right variable to return
-    taking into account the priorities of the different abscences in
+    taking into account the priorities of the different absences in
     case of overlapping
     """
     
@@ -201,7 +218,7 @@ class EnterHours:
     def login(self, username, userpwd):
         """login to iWom app, using the login and password"""
         
-        self.session.get('https://www.bpocenter-dxc.com/iwom_web5/portal_apps.aspx')
+        self.session.get(WEB['URLbase'])
         self.session.find_element_by_id("LoginApps_UserName").send_keys(username)
         self.session.find_element_by_id("LoginApps_Password").send_keys(userpwd)
         self.session.find_element_by_id("LoginApps_btnlogin").click()
@@ -216,17 +233,17 @@ class EnterHours:
     def entry_hours(self):
         """enter the hours into the app"""
         
-        self.session.get('https://www.bpocenter-dxc.com/iwom_web4/es-corp/app/Jornada/Reg_jornada.aspx')
+        self.session.get(WEB['URLjornada'])
         sleep(2)
-        btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
+        btn_disponible = self.session.find_element_by_id(WEB['Disponible'])
         if not btn_disponible.is_selected():
             btn_disponible.click()
             sleep(2)
-        hstart = self.session.find_element_by_id("ctl00_Sustituto_d_hora_inicio1")
-        mstart = self.session.find_element_by_id("ctl00_Sustituto_D_minuto_inicio1")
-        hend = self.session.find_element_by_id("ctl00_Sustituto_d_hora_final1")
-        mend = self.session.find_element_by_id("ctl00_Sustituto_d_minuto_final1")
-        horas = self.session.find_element_by_id("ctl00_Sustituto_T_efectivo")
+        hstart = self.session.find_element_by_id(WEB['Hinicio'])
+        mstart = self.session.find_element_by_id( WEB['Minicio'])
+        hend = self.session.find_element_by_id(WEB['Hfinal'])
+        mend = self.session.find_element_by_id(WEB['Mfinal'])
+        horas = self.session.find_element_by_id(WEB['Horas'])
         
         # in case some values exist already, they need to be removed
         hstart.send_keys(Keys.HOME + hours['start_h'])
@@ -234,21 +251,21 @@ class EnterHours:
         hend.send_keys(Keys.HOME + hours['end_h'])
         mend.send_keys(Keys.HOME + hours['end_m'])
         horas.send_keys(Keys.BACKSPACE*5 + hours['value'])
-        self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar").click()
+        self.session.find_element_by_id(WEB['Submit']).click()
         sleep(2) # to ensure it has time to save
 
     def entry_absent(self, abs_type):
         """mark the current day as vacation"""
         
-        self.session.get('https://www.bpocenter-dxc.com/iwom_web4/es-corp/app/Jornada/Reg_jornada.aspx')
-        btn_disponible = self.session.find_element_by_id("ctl00_Sustituto_Ch_disponible")
+        self.session.get(WEB['URLjornada'])
+        btn_disponible = self.session.find_element_by_id(WEB['Disponible'])
         if btn_disponible.is_selected():
             btn_disponible.click()
             sleep(2)
         
-        self.session.find_element_by_id("ctl00_Sustituto_D_absentismo").send_keys(Keys.HOME + abs_type)
+        self.session.find_element_by_id(WEB['Absence']).send_keys(Keys.HOME + abs_type)
         sleep(2) # wait to give time to update the page
-        self.session.find_element_by_id("ctl00_Sustituto_Btn_Guardar2").click()
+        self.session.find_element_by_id(WEB['Submit2']).click()
         sleep(2) # to ensure it has time to save
 
     def quit_session(self):
@@ -268,17 +285,18 @@ today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
 log_entry ("Loading configuration files.", with_user=False)
-conf = get_config(CONFIG_FILE)
-hours = calculate_hours(conf)
-abscence_conf = get_config(ABSCENCE_FILE)
+load_config()
+time_conf = get_config(TIME_FILE)
+hours = calculate_hours(time_conf)
+absence_conf = get_config(ABSENCE_FILE)
 users = get_credentials()
 
 
-# for each user in users file, enter its hours except or abscence code
+# for each user in users file, enter its hours except or absence code
 for user in users:
     username = user
     userpwd = users[user]
-    abs_code = user_abscence(user, abscence_conf)
+    abs_code = user_absence(user, absence_conf)
     if abs_code == '00':
         log_entry('Non-working day, no need to enter hours.')
         continue
@@ -288,7 +306,7 @@ for user in users:
     session.login(username, userpwd)
     session.open_app()
     if abs_code:
-        log_entry(f'Entering information in iWom: abscence {abs_code}.')
+        log_entry(f'Entering information in iWom: absence {abs_code}.')
         session.entry_absent(abs_code)
     else:
         log_entry(f'Entering information in iWom: {hours["value"]} hours.')
