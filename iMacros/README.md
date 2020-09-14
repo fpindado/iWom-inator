@@ -8,7 +8,7 @@ It only fills today information, not multi-day filling.
 
 ## Installation
 1. You need to install *iMacros* extension for your Web Browser first (available for iExplorer, Firefox, Chrome).
-2. Record a dummy macro and save it with the name you want (for example *iWom-Friday*).
+2. Record a dummy macro and save it with your preferred name (for example: *iWom-Friday*).
 3. Replace all the content with one of the macros here.
 4. Change your login and password:
     - in line 4, replace `CONTENT=Nombre<SP>Apellido` with your own first and last name

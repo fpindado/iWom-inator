@@ -47,7 +47,7 @@ You only need the python script `iWom-update.py`, and the config files as above.
 
 ## Dependencies / issues
 
-This script uses [Selenium package](https://selenium.dev/) to automate the entry of hours, and it depends on having the right webdriver to interact with the browser. The script is ready to run on any of the browsers: Firefox, Chrome, Edge and Internet Explorer. The webdrivers for Firefox, Chrome and Edge are included in the distribution, but not for Edge, as its installation is quite dependant on the version; if you want to execute in Edge, you will need to install the latest webdriver from here:
+This script uses [Selenium package](https://selenium.dev/) to automate the entry of hours, and it depends on having the right webdriver to interact with the browser. The script is ready to run on any of the browsers: Firefox, Chrome, Edge and Internet Explorer. The webdrivers for Firefox, Chrome and Edge are included in the distribution, but not for Edge, as its installation is quite dependent on the version; if you want to execute in Edge, you will need to install the latest webdriver from here:
 
 https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
 
