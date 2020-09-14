@@ -1,1 +1,10 @@
-python3 iWom-update.py chrome
+LOG="/home/pi/iWom-inator/iWom-inator.log"
+echo "Entering iWom-inator" > $LOG
+date >> $LOG
+cd /home/pi/iWom-inator/iWom-inator-Services
+/usr/bin/python3 iWom-update.py chrome >> $LOG
+cd /home/pi/iWom-inator/iWom-inator-Delivery
+/usr/bin/python3 iWom-update.py chrome >> $LOG
+date >> $LOG
+echo "Exiting iWom-inator" >> $LOG
+cat $LOG | telegram-send --stdin
