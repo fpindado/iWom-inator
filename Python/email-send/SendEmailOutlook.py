@@ -16,10 +16,15 @@ account vacation and bank holidays, and mark them as vacation.
 import datetime as dt
 import sys
 import configparser
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import os.path
 
-CONFIG_FILE = "config/config.ini"
+CONFIG_FILE = "config.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S" # too many special characters for .ini file
-
 
 
 def load_config():
@@ -27,13 +32,16 @@ def load_config():
     variables, to be used along the program
     """
     
-    global TIME_FILE, CREDENTIALS_FILE, ABSENCE_FILE, LOG_FILE, ABSENCE, WEB
+    global EMAIL_FROM, EMAIL_TO, EMAIL_SUBJECT, EMAIL_SERVER, EMAIL_PORT, LOG_FILE
     
     conf = get_config(CONFIG_FILE)
     LOG_FILE = conf['Files']['Log']
-    
-    ABSENCE = dict(conf['Absences'])
-    
+    EMAIL_FROM = conf['email']['from']
+    EMAIL_TO = conf['email']['to']
+    EMAIL_SUBJECT = conf['email']['subject']
+    EMAIL_SERVER = conf['email']['smtp-server-url']
+    EMAIL_PORT = conf['email']['smtp-server-port']
+
 
 def get_config(file):
     """returns the configuration from file"""
@@ -43,17 +51,12 @@ def get_config(file):
     return config
 
 
-
-def log_entry(text, with_user=True):
+def log_entry(text):
     """prints text in a log, including a timestamp and formatting"""
     
-    if with_user:
-        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: [{user}] {text}"
-    else:
-        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: {text}"
+    msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: {text}"
     print(msg)
     log_msg.append(msg+"\n")
-
 
 
 
@@ -63,35 +66,44 @@ log_msg = list()
 today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
-log_entry ("Loading sending email configuration file.", with_user=False)
+log_entry ("Loading sending email configuration file.")
 load_config()
-time_conf = get_config(TIME_FILE)
-hours = calculate_hours(time_conf)
-absence_conf = get_config(ABSENCE_FILE)
-users = get_credentials()
 
+def send_email(email_recipient,
+               email_subject,
+               email_message,
+               attachment_location = ''):
 
-# for each user in users file, enter its hours except or absence code
-for user in users:
-    username = user
-    userpwd = users[user]
-    abs_code = user_absence(user, absence_conf)
-    if abs_code == '00':
-        log_entry('Non-working day, no need to enter hours.')
-        continue
-    log_entry('Opening browser.')
-    session = EnterHours(browser)
-    log_entry('Login into iWom.')
-    session.login(username, userpwd)
-    session.open_app()
-    if abs_code:
-        log_entry(f'Entering information in iWom: absence {abs_code}.')
-        session.entry_absent(abs_code)
-    else:
-        log_entry(f'Entering information in iWom: {hours["value"]} hours.')
-        session.entry_hours()
-    log_entry(f'Closing session.')
-    session.quit_session()
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_FROM
+    msg['To'] = EMAIL_TO
+    msg['Subject'] = EMAIL_SUBJECT
+
+    msg.attach(MIMEText(email_message, 'plain'))
+
+    if attachment_location != '':
+        filename = os.path.basename(attachment_location)
+        attachment = open(attachment_location, "rb")
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(attachment.read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                        "attachment; filename= %s" % filename)
+        msg.attach(part)
+
+    try:
+        server = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT)
+        server.ehlo()
+        server.starttls()
+        server.login('your_login_name', 'your_login_password')
+        text = msg.as_string()
+        server.sendmail(email_sender, email_recipient, text)
+        print('email sent')
+        server.quit()
+    except:
+        print("SMPT server connection error")
+    return True
+
 
 # write log messages to file
 with open(LOG_FILE, mode='at', encoding='utf-8') as log:
