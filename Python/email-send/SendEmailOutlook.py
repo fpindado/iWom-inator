@@ -32,15 +32,19 @@ def load_config():
     variables, to be used along the program
     """
     
-    global EMAIL_FROM, EMAIL_TO, EMAIL_SUBJECT, EMAIL_SERVER, EMAIL_PORT, LOG_FILE
+    global EMAIL_FROM, EMAIL_TO, EMAIL_SUBJECT, EMAIL_SERVER, EMAIL_PORT
+    global LOG_FILE, OUTPUT_LOG, SERVER_LOGIN, SERVER_PASSWD
     
     conf = get_config(CONFIG_FILE)
     LOG_FILE = conf['Files']['Log']
+    OUTPUT_LOG = conf['Files']['email-attachment']
     EMAIL_FROM = conf['email']['from']
     EMAIL_TO = conf['email']['to']
     EMAIL_SUBJECT = conf['email']['subject']
     EMAIL_SERVER = conf['email']['smtp-server-url']
     EMAIL_PORT = conf['email']['smtp-server-port']
+    SERVER_LOGIN = conf['credentials']['server-login']
+    SERVER_PASSWD = conf['credentials']['server-password']
 
 
 def get_config(file):
@@ -63,49 +67,38 @@ def log_entry(text):
 ######################## MAIN ##################################
 
 log_msg = list()
-today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
 log_entry ("Loading sending email configuration file.")
 load_config()
 
-def send_email(email_recipient,
-               email_subject,
-               email_message,
-               attachment_location = ''):
+msg = MIMEMultipart()
+msg['From'] = EMAIL_FROM
+msg['To'] = EMAIL_TO
+msg['Subject'] = EMAIL_SUBJECT
 
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_FROM
-    msg['To'] = EMAIL_TO
-    msg['Subject'] = EMAIL_SUBJECT
+msg.attach(MIMEText(email_message, 'plain'))
+filename = os.path.basename(attachment_location)
+attachment = open(attachment_location, "rb")
+part = MIMEBase('application', 'octet-stream')
+part.set_payload(attachment.read())
+encoders.encode_base64(part)
+part.add_header('Content-Disposition',
+                "attachment; filename= %s" % filename)
+msg.attach(part)
 
-    msg.attach(MIMEText(email_message, 'plain'))
-
-    if attachment_location != '':
-        filename = os.path.basename(attachment_location)
-        attachment = open(attachment_location, "rb")
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload(attachment.read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition',
-                        "attachment; filename= %s" % filename)
-        msg.attach(part)
-
-    try:
-        server = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT)
-        server.ehlo()
-        server.starttls()
-        server.login('your_login_name', 'your_login_password')
-        text = msg.as_string()
-        server.sendmail(email_sender, email_recipient, text)
-        print('email sent')
-        server.quit()
-    except:
-        print("SMPT server connection error")
-    return True
-
+try:
+    server = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT)
+    server.ehlo()
+    server.starttls()
+    server.login(SERVER_LOGIN, SERVER_PASSWD)
+    text = msg.as_string()
+    server.sendmail(EMAIL_FROM, EMAIL_TO, text)
+    log_entry ("email sent.")
+    server.quit()
+except:
+    log_entry ("SMPT server connection error.")
 
 # write log messages to file
 with open(LOG_FILE, mode='at', encoding='utf-8') as log:
     log.writelines(log_msg)
-
