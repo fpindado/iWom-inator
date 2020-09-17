@@ -16,10 +16,15 @@ account vacation and bank holidays, and mark them as vacation.
 import datetime as dt
 import sys
 import configparser
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import os.path
 
-CONFIG_FILE = "config/config.ini"
+CONFIG_FILE = "config_sendemail.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S" # too many special characters for .ini file
-
 
 
 def load_config():
@@ -27,13 +32,20 @@ def load_config():
     variables, to be used along the program
     """
     
-    global TIME_FILE, CREDENTIALS_FILE, ABSENCE_FILE, LOG_FILE, ABSENCE, WEB
+    global EMAIL_FROM, EMAIL_TO, EMAIL_SUBJECT, EMAIL_SERVER, EMAIL_PORT
+    global LOG_FILE, OUTPUT_LOG, SERVER_LOGIN, SERVER_PASSWD
     
     conf = get_config(CONFIG_FILE)
     LOG_FILE = conf['Files']['Log']
-    
-    ABSENCE = dict(conf['Absences'])
-    
+    OUTPUT_LOG = conf['Files']['email-attachment']
+    EMAIL_FROM = conf['email']['from']
+    EMAIL_TO = conf['email']['to']
+    EMAIL_SUBJECT = conf['email']['subject']
+    EMAIL_SERVER = conf['email']['smtp-server-url']
+    EMAIL_PORT = conf['email']['smtp-server-port']
+    SERVER_LOGIN = conf['credentials']['server-login']
+    SERVER_PASSWD = conf['credentials']['server-password']
+
 
 def get_config(file):
     """returns the configuration from file"""
@@ -43,57 +55,52 @@ def get_config(file):
     return config
 
 
-
-def log_entry(text, with_user=True):
+def log_entry(text):
     """prints text in a log, including a timestamp and formatting"""
     
-    if with_user:
-        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: [{user}] {text}"
-    else:
-        msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: {text}"
+    msg = f"{dt.datetime.now().strftime(LOG_DATE_FORMAT)}: {text}"
     print(msg)
     log_msg.append(msg+"\n")
-
 
 
 
 ######################## MAIN ##################################
 
 log_msg = list()
-today = dt.date.today()
 
 # get global configuration, specific hours to enter, vacation information and user credentials
-log_entry ("Loading sending email configuration file.", with_user=False)
+log_entry ("Loading sending email configuration file.")
 load_config()
-time_conf = get_config(TIME_FILE)
-hours = calculate_hours(time_conf)
-absence_conf = get_config(ABSENCE_FILE)
-users = get_credentials()
 
+log_entry ("Building email message.")
+msg = MIMEMultipart()
+msg['From'] = EMAIL_FROM
+msg['To'] = EMAIL_TO
+msg['Subject'] = EMAIL_SUBJECT
 
-# for each user in users file, enter its hours except or absence code
-for user in users:
-    username = user
-    userpwd = users[user]
-    abs_code = user_absence(user, absence_conf)
-    if abs_code == '00':
-        log_entry('Non-working day, no need to enter hours.')
-        continue
-    log_entry('Opening browser.')
-    session = EnterHours(browser)
-    log_entry('Login into iWom.')
-    session.login(username, userpwd)
-    session.open_app()
-    if abs_code:
-        log_entry(f'Entering information in iWom: absence {abs_code}.')
-        session.entry_absent(abs_code)
-    else:
-        log_entry(f'Entering information in iWom: {hours["value"]} hours.')
-        session.entry_hours()
-    log_entry(f'Closing session.')
-    session.quit_session()
+# Open file to include in message in read only and text mode
+# and attach it as message
+log_entry ("Reading LOG to send in email.")
+file_to_send = open(OUTPUT_LOG)
+read_data = file_to_send.read()
+msg.attach(MIMEText(read_data, 'plain'))
+file_to_send.close()
+
+try:
+    log_entry ("Connecting with email server.")
+    server = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT)
+    server.ehlo()
+    server.starttls()
+    log_entry ("Login into email server.")
+    server.login(SERVER_LOGIN, SERVER_PASSWD)
+    log_entry ("Sending email.")
+    server.send_message(msg)
+    del msg
+    log_entry ("email sent.")
+    server.quit()
+except:
+    log_entry ("SMPT server connection error.")
 
 # write log messages to file
 with open(LOG_FILE, mode='at', encoding='utf-8') as log:
     log.writelines(log_msg)
-
