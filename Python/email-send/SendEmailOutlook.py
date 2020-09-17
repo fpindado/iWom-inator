@@ -23,7 +23,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import os.path
 
-CONFIG_FILE = "config.ini"
+CONFIG_FILE = "config_sendemail.ini"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S" # too many special characters for .ini file
 
 
@@ -72,28 +72,30 @@ log_msg = list()
 log_entry ("Loading sending email configuration file.")
 load_config()
 
+log_entry ("Building email message.")
 msg = MIMEMultipart()
 msg['From'] = EMAIL_FROM
 msg['To'] = EMAIL_TO
 msg['Subject'] = EMAIL_SUBJECT
 
-msg.attach(MIMEText(email_message, 'plain'))
-filename = os.path.basename(attachment_location)
-attachment = open(attachment_location, "rb")
-part = MIMEBase('application', 'octet-stream')
-part.set_payload(attachment.read())
-encoders.encode_base64(part)
-part.add_header('Content-Disposition',
-                "attachment; filename= %s" % filename)
-msg.attach(part)
+# Open file to include in message in read only and text mode
+# and attach it as message
+log_entry ("Reading LOG to send in email.")
+file_to_send = open(OUTPUT_LOG)
+read_data = file_to_send.read()
+msg.attach(MIMEText(read_data, 'plain'))
+file_to_send.close()
 
 try:
+    log_entry ("Connecting with email server.")
     server = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT)
     server.ehlo()
     server.starttls()
+    log_entry ("Login into email server.")
     server.login(SERVER_LOGIN, SERVER_PASSWD)
-    text = msg.as_string()
-    server.sendmail(EMAIL_FROM, EMAIL_TO, text)
+    log_entry ("Sending email.")
+    server.send_message(msg)
+    del msg
     log_entry ("email sent.")
     server.quit()
 except:
