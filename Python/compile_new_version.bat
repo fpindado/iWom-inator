@@ -11,7 +11,7 @@
 :: ==================================================
 
 :: Create filenames
-set zip="C:\Cloud\MEGA\Portable\7-Zip\7z"
+set zip="C:\Cloud\Portable\7-Zip\7z"
 set win_file=iWom-update_python_windows_v%1.zip
 set lin_file=iWom-update_python_linux_v%1.zip
 
