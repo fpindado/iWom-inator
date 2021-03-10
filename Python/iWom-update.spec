@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['iWom-update.py'],
              pathex=['C:\\Cloud\\Nextcloud\\Programacion\\GitHub\\iWom-inator\\Python'],
              binaries=[('chromedriver.exe', '.'), ('geckodriver.exe', '.'),
-                      ('IEDriverServer.exe', '.'), ('bin/*', 'bin/')],
+                      ('msedgedriver.exe', '.'), ('bin/*', 'bin/')],
              datas=[('templates/*', 'config/')],
              hiddenimports=[],
              hookspath=[],
