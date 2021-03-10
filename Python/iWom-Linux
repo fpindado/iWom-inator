@@ -1,14 +1,15 @@
-LOG="/home/pi/iWom-inator/iWom-inator.log"
-EMAIL_LOG="/home/pi/iWom-inator/iWom-sendemail.log"
+BASE="/home/$USER/iWom-inator"
+LOG="$BASE/iWom-inator.log"
+EMAIL_LOG="$BASE/iWom-sendemail.log"
 echo "Entering iWom-inator" > $LOG
 date >> $LOG
-cd /home/pi/iWom-inator/iWom-inator-Services
+cd $BASE/iWom-inator-Services
 /usr/bin/python3 iWom-update.py chrome >> $LOG
-cd /home/pi/iWom-inator/iWom-inator-Delivery
+cd $BASE/iWom-inator-Delivery
 /usr/bin/python3 iWom-update.py chrome >> $LOG
 date >> $LOG
 echo "Exiting iWom-inator" >> $LOG
 cd ..
 echo "Sending Log file by Telegram & email" >> $LOG
-cat $LOG | telegram-send --stdin
+cat $LOG | grep hours | sed 's/ Entering information in iWom//' | telegram-send --stdin
 /usr/bin/python3 SendEmailOutlook.py > $EMAIL_LOG
