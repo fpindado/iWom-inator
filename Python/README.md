@@ -43,6 +43,9 @@ You only need the python script `iWom-update.py`, and the config files as above.
      - make the script executable, and then launch the script directly:
        - `chmod +x iWom-update.py`
        - `iWom-update.py <<browser>>`
+  6. If you want to send the report at the end of the execution, you can do it in the following way:
+     - Using the python script `SendEmailOutlook.py` under folder `email-send`
+     - Using the `telegram-send` utility. It needs to be installed by executing `pip3 install telegram-send`. More information on [telegram-send page](https://pypi.org/project/telegram-send/)
 
 
 ## Dependencies / issues
