@@ -1,4 +1,4 @@
-BASE="/home/$USER/iWom-inator"
+BASE="/home/pi/iWom-inator"
 LOG="$BASE/iWom-inator.log"
 EMAIL_LOG="$BASE/iWom-sendemail.log"
 echo "Entering iWom-inator" > $LOG
