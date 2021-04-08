@@ -1,15 +1,49 @@
+#!/bin/bash
+set -eE
+
 BASE="/home/pi/iWom-inator"
 LOG="$BASE/iWom-inator.log"
 EMAIL_LOG="$BASE/iWom-sendemail.log"
-echo "Entering iWom-inator" > $LOG
-date >> $LOG
+TODAY=$( date +"%Y/%m/%d" )
+
+print_log()
+{
+  printf "%s: %s.\n" "$( date +"%Y/%m/%d %H:%M:%S" )" "$1" >> $LOG
+}
+
+telegram_log()
+{
+  print_log "$1"
+  printf "%s\n%s." "$( date +"%Y/%m/%d %H:%M:%S" )" "$1" | telegram-send --stdin
+}
+
+echo "" > $LOG
+print_log "Entering iWom-inator"
 cd $BASE/iWom-inator-Services
 /usr/bin/python3 iWom-update.py chrome >> $LOG
 cd $BASE/iWom-inator-Delivery
 /usr/bin/python3 iWom-update.py chrome >> $LOG
-date >> $LOG
-echo "Exiting iWom-inator" >> $LOG
-cd ..
-echo "Sending Log file by Telegram & email" >> $LOG
-cat $LOG | grep hours | sed 's/ Entering information in iWom//' | telegram-send --stdin
+print_log "Exiting iWom-inator"
+
+cd $BASE
+print_log "Checking and sending summary by Telegram"
+LOG_EXECUTION=$( cat $LOG | grep "Loading configuration" | head -n1 | awk '{ print $1}' )
+NUM_LINES=$( cat $LOG | grep hours | wc -l )
+
+# Check if logfile contained information is minimally correct and if logfile execution date is correct
+if [ -z "$LOG_EXECUTION" ] || [ "$NUM_LINES" -ne 4 ]
+then
+  telegram_log "iWom execution error"
+else  
+  if [ "$TODAY" = "$LOG_EXECUTION" ]
+  then
+    telegram_log "iWom execution Ok"
+  else
+    telegram_log "iWom execution error, date mismatch"
+  fi
+fi
+
+# cat $LOG | grep hours | sed 's/ Entering information in iWom//' | telegram-send --stdin
+
+print_log "Sending Log file by email."
 /usr/bin/python3 SendEmailOutlook.py > $EMAIL_LOG
